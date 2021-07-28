@@ -1,5 +1,5 @@
 import React, {Fragment} from 'react'
-import {useDispatch, useSelector} from 'react-redux'
+import {useAppDispatch, useAppSelector} from './app/hooks'
 import {withRouter, Route, Switch, Redirect} from 'react-router-dom'
 import { Login } from './components';
 import Home from './components/Home';
@@ -10,14 +10,14 @@ export interface RoutesProps {
 }
 
 const Routes: React.SFC<RoutesProps> = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const loadInitialData = () => dispatch(me())
 
 	useEffect(() => {
 		loadInitialData();
 	}, []);
 
-	const isLoggedIn = useSelector(state => state.auth.id);
+	const isLoggedIn = useAppSelector(state => state.auth.id);
   return ( <div>
         {isLoggedIn ? (
           <Switch>
