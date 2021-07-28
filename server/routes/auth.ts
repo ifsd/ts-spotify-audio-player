@@ -3,7 +3,7 @@ import SpotifyWebApi from 'spotify-web-api-node';
 
 const router = express.Router();
 
-router.get('/spotify', (req: Request, res: Response, next: NextFunction) => {
+router.get('/spotify', (req: Request, res: Response) => {
   const { CLIENT_ID, REDIRECT_URI } = process.env;
 
   const scopes = ['user-read-private', 'user-read-email'];
@@ -17,11 +17,13 @@ router.get('/spotify', (req: Request, res: Response, next: NextFunction) => {
   const authorizeURL = spotifyApi.createAuthorizeURL(scopes);
 
   res.redirect(authorizeURL);
+  // res.json({ authorizeURL });
 });
 
+let token;
 router.get(
   '/spotify/callback',
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
 
     const credentials = {
@@ -32,24 +34,42 @@ router.get(
 
     const spotifyApi = new SpotifyWebApi(credentials);
 
-    const code = req.query.code as string;
+    const code = (req.query as { code: string }).code;
 
-    // Retrieve an access token and a refresh token
-    spotifyApi.authorizationCodeGrant(code).then(
-      function (data) {
-        console.log('The token expires in ' + data.body['expires_in']);
-        console.log('The access token is ' + data.body['access_token']);
-        console.log('The refresh token is ' + data.body['refresh_token']);
+    try {
+      // Retrieve an access token and a refresh token
+      const data = await spotifyApi.authorizationCodeGrant(code);
+      token = data.body.access_token;
+      res.json({
+        expiresIn: data.body.expires_in,
+        accessToken: data.body.access_token,
+        refreshToken: data.body.refresh_token,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
-        // Set the access token on the API object to use it in later calls
-        spotifyApi.setAccessToken(data.body['access_token']);
-        spotifyApi.setRefreshToken(data.body['refresh_token']);
-        res.send('Sucess!!!');
-      },
-      function (err) {
-        console.log('Something went wrong!', err.message);
-      }
-    );
+router.get(
+  '/spotify/me',
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
+
+    const credentials = {
+      clientId: CLIENT_ID,
+      clientSecret: CLIENT_SECRET,
+      accessToken: req.headers.authorization,
+    };
+
+    const spotifyApi = new SpotifyWebApi(credentials);
+
+    try {
+      const data = await spotifyApi.getMe();
+      res.json(data);
+    } catch (error) {
+      next(error);
+    }
   }
 );
 
