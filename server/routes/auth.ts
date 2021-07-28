@@ -1,76 +1,12 @@
-import express, { Request, Response, NextFunction } from 'express';
-import SpotifyWebApi from 'spotify-web-api-node';
+import express from 'express';
+import { getAuthorizeUrl, getTokens, getUserInfo } from '../controllers/auth';
 
 const router = express.Router();
 
-router.get('/spotify', (req: Request, res: Response) => {
-  const { CLIENT_ID, REDIRECT_URI } = process.env;
+router.get('/spotify', getAuthorizeUrl);
 
-  const scopes = ['user-read-private', 'user-read-email'];
-  const credentials = {
-    redirectUri: REDIRECT_URI,
-    clientId: CLIENT_ID,
-  };
+router.get('/spotify/callback', getTokens);
 
-  const spotifyApi = new SpotifyWebApi(credentials);
-
-  const authorizeURL = spotifyApi.createAuthorizeURL(scopes);
-
-  res.redirect(authorizeURL);
-  // res.json({ authorizeURL });
-});
-
-let token;
-router.get(
-  '/spotify/callback',
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
-
-    const credentials = {
-      clientId: CLIENT_ID,
-      clientSecret: CLIENT_SECRET,
-      redirectUri: REDIRECT_URI,
-    };
-
-    const spotifyApi = new SpotifyWebApi(credentials);
-
-    const code = (req.query as { code: string }).code;
-
-    try {
-      // Retrieve an access token and a refresh token
-      const data = await spotifyApi.authorizationCodeGrant(code);
-      token = data.body.access_token;
-      res.json({
-        expiresIn: data.body.expires_in,
-        accessToken: data.body.access_token,
-        refreshToken: data.body.refresh_token,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-router.get(
-  '/spotify/me',
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
-
-    const credentials = {
-      clientId: CLIENT_ID,
-      clientSecret: CLIENT_SECRET,
-      accessToken: req.headers.authorization,
-    };
-
-    const spotifyApi = new SpotifyWebApi(credentials);
-
-    try {
-      const data = await spotifyApi.getMe();
-      res.json(data);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
+router.get('/spotify/me', getUserInfo);
 
 export default router;
