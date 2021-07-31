@@ -1,8 +1,9 @@
-import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
+dotenv.config();
+import express, { Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 
-dotenv.config();
+import authRouter from './routes/auth';
 
 const app = express();
 
@@ -13,7 +14,8 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 // auth and api routes
-// app.use('/auth', require('./auth'))
+app.use('/auth', authRouter);
+
 app.get('/', (req, res, err) => res.send('HELLO WORLD'));
 
 // error handling endware
